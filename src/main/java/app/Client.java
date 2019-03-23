@@ -34,11 +34,10 @@ public class Client extends ReceiverAdapter {
         if(currentView == null){
             System.out.println("New member: " + newView.toString());
         }
-        else{
-            /*List<Address> addedMembers = View.newMembers(currentView, newView);
-            for(Address adr: addedMembers){
-                System.out.println(adr.toString());
-            }*/
+        if(newView instanceof MergeView) {
+            ViewHandler handler=new ViewHandler(channel, (MergeView)newView);
+            // requires separate thread as we don't want to block JGroups
+            handler.start();
         }
         currentView = newView;
     }
@@ -157,53 +156,70 @@ public class Client extends ReceiverAdapter {
 
     public void handlePuttingElementIntoDistributedMap() throws Exception{
         BufferedReader bfr = new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("Enter key to add to distributedMap: ");
+        System.out.print("|--------------------------------------------|");
+        System.out.println("\nEnter key to add to distributedMap: ");
+        System.out.print("|--------------------------------------------|\n>>");
         String key = bfr.readLine();
-        System.out.println("Enter value corresponding key to add to distributedMap: ");
+        System.out.print("|--------------------------------------------|");
+        System.out.println("\nEnter value corresponding key to add to distributedMap: ");
+        System.out.print("|--------------------------------------------|\n>>");
         String value = bfr.readLine();
         putElementIntoDistributedMap(key, Integer.parseInt(value));
     }
 
     public void handleRemovingElementFromDistributedMap() throws Exception{
         BufferedReader bfr = new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("Enter key to remove from distributedMap: ");
+        System.out.print("|--------------------------------------------|");
+        System.out.println("\nEnter key to remove from distributedMap: ");
+        System.out.print("|--------------------------------------------|\n>>");
         String key = bfr.readLine();
         removeElementFromDistributedMap(key);
     }
 
     public void handleGettingValueFromDistributedMap() throws Exception{
         BufferedReader bfr = new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("Enter key to get value from distributedMap: ");
+        System.out.print("|--------------------------------------------|");
+        System.out.println("\nEnter key to get value from distributedMap: ");
+        System.out.print("|--------------------------------------------|\n>>");
         String key = bfr.readLine();
         Integer value =  getValueFromDistributedMap(key);
         String msg;
         msg = (value != null) ? ("Key: " + key + ", value: " + value) : "null";
+        System.out.println("|--------------------------------------------|");
         System.out.println(msg);
+        System.out.println("|--------------------------------------------|");
     }
 
     public void handleDistributedMapContainsKey() throws Exception{
         BufferedReader bfr = new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("Enter key to get value from distributedMap: ");
+        System.out.print("|--------------------------------------------|");
+        System.out.println("\nEnter key to get value from distributedMap: ");
+        System.out.print("|--------------------------------------------|\n>>");
         String key = bfr.readLine();
         boolean result = containsKey(key);
-        System.out.println("Is key present in distributedMap? : " + result);
+        System.out.print("|--------------------------------------------|");
+        System.out.println("\nIs key present in distributedMap? : " + result);
+        System.out.println("|--------------------------------------------|");
     }
 
     public void handleQuiting(){
-        System.out.println("----------------[QUITING]----------------");
+        System.out.println("\n----------------[QUITING]----------------");
     }
 
     public void runClient() throws Exception{
         boolean isRunning = true;
         BufferedReader bfr = new BufferedReader(new InputStreamReader(System.in));
         prepareClientToRun();
-        System.out.println("To put new entry into map enter \"put\"\n" +
+        System.out.println("|--------------------------------------------|");
+        System.out.println("|To put new entry into map enter \"put\"\n" +
                 "To remove entry from map enter \"remove\"\n" +
                 "To get <key, value> from map enter \"get\"\n" +
                 "To check key exists in map enter \"contains\"\n" +
-                "To exit from app enter q: ");
+                "To exit from app enter q: |");
+        System.out.println("|--------------------------------------------|");
 
         while(isRunning) {
+            System.out.print(">>");
             String choice = bfr.readLine();
             switch(choice.toLowerCase()){
                 case "put":
@@ -227,4 +243,32 @@ public class Client extends ReceiverAdapter {
         disconnectFromGroup();
     }
 
+    // ViewHandler stuff from jgroups.org tutorial
+    private static class ViewHandler extends Thread {
+        JChannel ch;
+        MergeView view;
+
+        private ViewHandler(JChannel ch, MergeView view) {
+            this.ch = ch;
+            this.view = view;
+        }
+
+        public void run() {
+            List<View> subgroups = view.getSubgroups();
+            View tmp_view = subgroups.get(0); // picks the first
+            Address local_addr = ch.getAddress();
+            if (!tmp_view.getMembers().contains(local_addr)) {
+                System.out.println("Not member of the new primary partition ("
+                        + tmp_view + "), will re-acquire the state");
+                try {
+                    ch.getState(null, 30000);
+                } catch (Exception ex) {
+                }
+            } else {
+                System.out.println("Not member of the new primary partition ("
+                        + tmp_view + "), will do nothing");
+            }
+        }
+
+    }
 }
