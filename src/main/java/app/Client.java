@@ -109,7 +109,7 @@ public class Client extends ReceiverAdapter {
         try {
             stack.init();
             channel.setReceiver(this);
-            channel.setDiscardOwnMessages(true);
+            //channel.setDiscardOwnMessages(true);
             channel.connect(groupName);
             channel.getState(null, 0);
         } catch (Exception e) {
@@ -142,6 +142,19 @@ public class Client extends ReceiverAdapter {
         }
     }
 
+    public Integer getValueFromDistributedMap(String key){
+        synchronized(distributedMap){
+            if(distributedMap.containsKey(key)){
+               return distributedMap.get(key);
+            }
+            return null;
+        }
+    }
+
+    public boolean containsKey(String key){
+        return distributedMap.containsKey(key);
+    }
+
     public void handlePuttingElementIntoDistributedMap() throws Exception{
         BufferedReader bfr = new BufferedReader(new InputStreamReader(System.in));
         System.out.println("Enter key to add to distributedMap: ");
@@ -158,13 +171,38 @@ public class Client extends ReceiverAdapter {
         removeElementFromDistributedMap(key);
     }
 
+    public void handleGettingValueFromDistributedMap() throws Exception{
+        BufferedReader bfr = new BufferedReader(new InputStreamReader(System.in));
+        System.out.println("Enter key to get value from distributedMap: ");
+        String key = bfr.readLine();
+        Integer value =  getValueFromDistributedMap(key);
+        String msg;
+        msg = (value != null) ? ("Key: " + key + ", value: " + value) : "null";
+        System.out.println(msg);
+    }
+
+    public void handleDistributedMapContainsKey() throws Exception{
+        BufferedReader bfr = new BufferedReader(new InputStreamReader(System.in));
+        System.out.println("Enter key to get value from distributedMap: ");
+        String key = bfr.readLine();
+        boolean result = containsKey(key);
+        System.out.println("Is key present in distributedMap? : " + result);
+    }
+
+    public void handleQuiting(){
+        System.out.println("----------------[QUITING]----------------");
+    }
 
     public void runClient() throws Exception{
         boolean isRunning = true;
         BufferedReader bfr = new BufferedReader(new InputStreamReader(System.in));
         prepareClientToRun();
         System.out.println("To put new entry into map enter \"put\"\n" +
+                "To remove entry from map enter \"remove\"\n" +
+                "To get <key, value> from map enter \"get\"\n" +
+                "To check key exists in map enter \"contains\"\n" +
                 "To exit from app enter q: ");
+
         while(isRunning) {
             String choice = bfr.readLine();
             switch(choice.toLowerCase()){
@@ -174,7 +212,14 @@ public class Client extends ReceiverAdapter {
                 case "remove":
                     handleRemovingElementFromDistributedMap();
                     break;
+                case "get":
+                    handleGettingValueFromDistributedMap();
+                    break;
+                case "contains":
+                    handleDistributedMapContainsKey();
+                    break;
                 case "q":
+                    handleQuiting();
                     isRunning = false;
                     break;
             }
