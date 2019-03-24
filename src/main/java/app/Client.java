@@ -66,9 +66,6 @@ public class Client extends ReceiverAdapter {
     public void receive(Message message){
         synchronized(distributedMap) {
             distributedMap = (DistributedMap) message.getObject();
-            for(Map.Entry<String, Integer> entry: distributedMap.stringMap.entrySet())
-                System.out.print("entry: " + entry.toString() + ", ");
-            System.out.println();
         }
     }
 
@@ -117,7 +114,7 @@ public class Client extends ReceiverAdapter {
 
     public void disconnectFromGroup(){
         try {
-            Thread.sleep(2 * 60000);
+            Thread.sleep( 60000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -151,6 +148,15 @@ public class Client extends ReceiverAdapter {
 
     public boolean containsKey(String key){
         return distributedMap.containsKey(key);
+    }
+
+    public void handleShowingElements(){
+        synchronized(distributedMap){
+            System.out.println("|--------------------------------------------|");
+            for(Map.Entry<String, Integer> entry: distributedMap.stringMap.entrySet())
+                System.out.print("entry: " + entry.toString() + ", ");
+            System.out.println("\n|--------------------------------------------|");
+        }
     }
 
     public void handlePuttingElementIntoDistributedMap() throws Exception{
@@ -214,11 +220,12 @@ public class Client extends ReceiverAdapter {
                 "To remove entry from map enter \"remove\"\n" +
                 "To get <key, value> from map enter \"get\"\n" +
                 "To check key exists in map enter \"contains\"\n" +
+                "To print all elements in map enter \"print\"\n" +
                 "To exit from app enter q: |");
         System.out.println("|--------------------------------------------|");
 
         while(isRunning) {
-            System.out.print(">>");
+            System.out.print("<put> | <remove> | <get> | <contains> | <print> | <q> \n>>");
             String choice = bfr.readLine();
             switch(choice.toLowerCase()){
                 case "put":
@@ -232,6 +239,9 @@ public class Client extends ReceiverAdapter {
                     break;
                 case "contains":
                     handleDistributedMapContainsKey();
+                    break;
+                case "print":
+                    handleShowingElements();
                     break;
                 case "q":
                     handleQuiting();
