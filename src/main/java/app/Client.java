@@ -136,6 +136,7 @@ public class Client extends ReceiverAdapter {
         synchronized(distributedMap){
             if(distributedMap.containsKey(key))
                 distributedMap.remove(key);
+            sendStateMessage();
         }
     }
 
