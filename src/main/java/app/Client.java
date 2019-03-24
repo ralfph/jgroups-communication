@@ -15,18 +15,17 @@ import java.util.Map;
 
 public class Client extends ReceiverAdapter {
     private DistributedMap distributedMap;
-   // String msg;
-    //String msgToSend;
     private JChannel channel;
     private String groupName;
-    public View currentView = null;
+    private String multicastAddress;
+    private View currentView = null;
 
 
-    public Client(String groupName, DistributedMap distributedMap){
-        //this.msgToSend = msgToSend;
+    public Client(String groupName, String multicastAddress, DistributedMap distributedMap){
         this.groupName = groupName;
+        this.multicastAddress = multicastAddress;
         this.distributedMap = distributedMap;
-        channel = new JChannel(false);
+        this.channel = new JChannel(false);
     }
 
     @Override
@@ -36,7 +35,6 @@ public class Client extends ReceiverAdapter {
         }
         if(newView instanceof MergeView) {
             ViewHandler handler=new ViewHandler(channel, (MergeView)newView);
-            // requires separate thread as we don't want to block JGroups
             handler.start();
         }
         currentView = newView;
@@ -69,13 +67,12 @@ public class Client extends ReceiverAdapter {
         synchronized(distributedMap) {
             distributedMap = (DistributedMap) message.getObject();
             for(Map.Entry<String, Integer> entry: distributedMap.stringMap.entrySet())
-                System.out.print("Distributed Map: " + entry.toString() + ", ");
+                System.out.print("entry: " + entry.toString() + ", ");
             System.out.println();
         }
     }
 
     public void sendStateMessage(){
-        //System.out.println("Msg to send: " +sMsg);
         Message m = new Message(null, distributedMap);
         try {
             channel.send(m);
@@ -84,10 +81,11 @@ public class Client extends ReceiverAdapter {
         }
     }
 
+    //"230.100.200.1"
     public void prepareClientToRun() throws UnknownHostException {
         ProtocolStack stack=new ProtocolStack();
         channel.setProtocolStack(stack);
-        stack.addProtocol(new UDP().setValue("mcast_group_addr",InetAddress.getByName("230.100.200.1")))
+        stack.addProtocol(new UDP().setValue("mcast_group_addr",InetAddress.getByName(multicastAddress)))
                 .addProtocol(new PING())
                 .addProtocol(new MERGE3())
                 .addProtocol(new FD_SOCK())
