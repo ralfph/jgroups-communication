@@ -1,0 +1,12 @@
+Compile Maven project using command:
+
+	mvn compile
+
+Run program using command:
+
+	mvn exec:java -Dexec.mainClass=app.Main -Dexec.args="your args"
+
+where app.Main is a class with main() method
+for instance:
+
+	mvn exec:java -Dexec.mainClass=app.Main -Dexec.args="cluster 230.100.200.1"
